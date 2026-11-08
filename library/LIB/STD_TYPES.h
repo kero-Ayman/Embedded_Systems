@@ -3,7 +3,9 @@
 
 #define STD_TYPES_OK 1
 #define STD_TYPES_NOK 0
-#define NULL ((void*)0)
+#ifndef NULL
+#define NULL ((void *)0)
+#endif
 
 typedef unsigned char			 	u8;
 typedef char 						s8;
