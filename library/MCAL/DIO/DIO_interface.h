@@ -24,6 +24,11 @@
 #define DIO_u8_HIGH              1
 #define DIO_u8_LOW               0
 
+#define DIO_u8_PORT_OUTPUT   0xFF
+#define DIO_u8_PORT_INPUT    0x00
+
+
+
 void DIO_voidInit         (void);
 
 u8  DIO_u8SetPinDirection (u8 Copy_u8PortId, u8 Copy_u8PinId ,u8 Copy_u8PinDirection);
@@ -37,6 +42,14 @@ u8  DIO_u8SetPortDirection(u8 Copy_u8PortId, u8 Copy_u8PortDirection);
 u8  DIO_u8SetPortValue    (u8 Copy_u8PortId, u8 Copy_u8PortValue);
 
 u8  DIO_u8GetPortValue    (u8 Copy_u8PortId, u8 * Copy_pu8ReturnedPortValue);
+
+u8 DIO_u8TogglePinValue   (u8 Copy_u8PortId, u8 Copy_u8PinId);
+
+u8 DIO_u8TogglePortValue  (u8 Copy_u8PortId);
+
+u8 DIO_u8GetPortDirection (u8 Copy_u8PortId, u8 * Copy_pu8ReturnedPortDirection);
+
+u8 DIO_u8ActivePinPullUp  (u8 Copy_u8PortId, u8 Copy_u8PinId);
 
 
 #endif

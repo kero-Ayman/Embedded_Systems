@@ -122,8 +122,9 @@ u8  DIO_u8SetPinValue     (u8 Copy_u8PortId, u8 Copy_u8PinId ,u8 Copy_u8PinValue
 u8  DIO_u8GetPinValue     (u8 Copy_u8PortId, u8 Copy_u8PinId ,u8 * Copy_pu8ReturnedPinValue)
 {
 	u8 Local_u8ErrorState = STD_TYPES_OK;
-	
-	if(Copy_pu8ReturnedPinValue != NULL)
+
+	/* FIX: the pin id was not validated (a pin id > 7 read an undefined bit) */
+	if((Copy_pu8ReturnedPinValue != NULL) && (Copy_u8PinId <= DIO_u8_PIN7))
 	{
 		switch (Copy_u8PortId)
 		{
@@ -146,7 +147,7 @@ u8  DIO_u8GetPinValue     (u8 Copy_u8PortId, u8 Copy_u8PinId ,u8 * Copy_pu8Retur
 			default: Local_u8ErrorState = STD_TYPES_NOK;
 		}
 	}
-	else 
+	else
 	{
 		Local_u8ErrorState = STD_TYPES_NOK;
 	}
@@ -154,47 +155,23 @@ u8  DIO_u8GetPinValue     (u8 Copy_u8PortId, u8 Copy_u8PinId ,u8 * Copy_pu8Retur
 	return Local_u8ErrorState;
 }
 
+/*
+ * FIX: the old version accepted only DIO_u8_OUTPUT / DIO_u8_INPUT (so a mask such as
+ * 0x0F was rejected and the register was never written).
+ * Now Copy_u8PortDirection is a full 8-bit mask: bit = 1 -> output, bit = 0 -> input.
+ * Use DIO_u8_PORT_OUTPUT (0xFF) / DIO_u8_PORT_INPUT (0x00) for the whole port.
+ */
 u8  DIO_u8SetPortDirection(u8 Copy_u8PortId, u8 Copy_u8PortDirection)
 {
 	u8 Local_u8ErrorState = STD_TYPES_OK;
-	if((Copy_u8PortDirection == DIO_u8_OUTPUT) || (Copy_u8PortDirection == DIO_u8_INPUT))
+
+	switch (Copy_u8PortId)
 	{
-		switch (Copy_u8PortId)
-		{
-			case DIO_u8_PORTA:
-				switch (Copy_u8PortDirection)
-				{
-					case DIO_u8_OUTPUT:DIO_u8_DDRA_REG = 0xff;break;
-					case DIO_u8_INPUT :DIO_u8_DDRA_REG = 0x00;break;
-				}
-			break;
-			case DIO_u8_PORTB:
-				switch (Copy_u8PortDirection)
-				{
-					case DIO_u8_OUTPUT:DIO_u8_DDRB_REG = 0xff;break;
-					case DIO_u8_INPUT :DIO_u8_DDRB_REG = 0x00;break;
-				}
-			break;
-			case DIO_u8_PORTC:
-				switch (Copy_u8PortDirection)
-				{
-					case DIO_u8_OUTPUT:DIO_u8_DDRC_REG = 0xff;break;
-					case DIO_u8_INPUT :DIO_u8_DDRC_REG = 0x00;break;
-				}
-			break;
-			case DIO_u8_PORTD:
-				switch (Copy_u8PortDirection)
-				{
-					case DIO_u8_OUTPUT:DIO_u8_DDRD_REG = 0xff;break;
-					case DIO_u8_INPUT :DIO_u8_DDRD_REG = 0x00;break;
-				}
-			break;
-			default :Local_u8ErrorState = STD_TYPES_NOK;
-		}
-	}
-	else
-	{
-		Local_u8ErrorState = STD_TYPES_NOK;
+		case DIO_u8_PORTA: DIO_u8_DDRA_REG = Copy_u8PortDirection; break;
+		case DIO_u8_PORTB: DIO_u8_DDRB_REG = Copy_u8PortDirection; break;
+		case DIO_u8_PORTC: DIO_u8_DDRC_REG = Copy_u8PortDirection; break;
+		case DIO_u8_PORTD: DIO_u8_DDRD_REG = Copy_u8PortDirection; break;
+		default : Local_u8ErrorState = STD_TYPES_NOK;
 	}
 	return Local_u8ErrorState;
 }
@@ -226,6 +203,85 @@ u8  DIO_u8GetPortValue    (u8 Copy_u8PortId, u8 * Copy_pu8ReturnedPortValue)
 			case DIO_u8_PORTD: *Copy_pu8ReturnedPortValue = DIO_u8_PIND_REG;break;
 			default : Local_u8ErrorState = STD_TYPES_NOK;
 		}
+	}
+	else
+	{
+		Local_u8ErrorState = STD_TYPES_NOK;
+	}
+	return Local_u8ErrorState;
+}
+
+/* ------------------------------------------------------------------ */
+/* NEW functions                                                       */
+/* ------------------------------------------------------------------ */
+
+/* Invert one output pin */
+u8  DIO_u8TogglePinValue  (u8 Copy_u8PortId, u8 Copy_u8PinId)
+{
+	u8 Local_u8ErrorState = STD_TYPES_OK;
+	if(Copy_u8PinId <= DIO_u8_PIN7)
+	{
+		switch (Copy_u8PortId)
+		{
+			case DIO_u8_PORTA: DIO_u8_PORTA_REG ^= (u8)(1u << Copy_u8PinId); break;
+			case DIO_u8_PORTB: DIO_u8_PORTB_REG ^= (u8)(1u << Copy_u8PinId); break;
+			case DIO_u8_PORTC: DIO_u8_PORTC_REG ^= (u8)(1u << Copy_u8PinId); break;
+			case DIO_u8_PORTD: DIO_u8_PORTD_REG ^= (u8)(1u << Copy_u8PinId); break;
+			default : Local_u8ErrorState = STD_TYPES_NOK;
+		}
+	}
+	else
+	{
+		Local_u8ErrorState = STD_TYPES_NOK;
+	}
+	return Local_u8ErrorState;
+}
+
+/* Invert every output pin of a port */
+u8  DIO_u8TogglePortValue (u8 Copy_u8PortId)
+{
+	u8 Local_u8ErrorState = STD_TYPES_OK;
+	switch (Copy_u8PortId)
+	{
+		case DIO_u8_PORTA: DIO_u8_PORTA_REG = (u8)~DIO_u8_PORTA_REG; break;
+		case DIO_u8_PORTB: DIO_u8_PORTB_REG = (u8)~DIO_u8_PORTB_REG; break;
+		case DIO_u8_PORTC: DIO_u8_PORTC_REG = (u8)~DIO_u8_PORTC_REG; break;
+		case DIO_u8_PORTD: DIO_u8_PORTD_REG = (u8)~DIO_u8_PORTD_REG; break;
+		default : Local_u8ErrorState = STD_TYPES_NOK;
+	}
+	return Local_u8ErrorState;
+}
+
+/* Read the direction register of a port (bit = 1 -> output) */
+u8  DIO_u8GetPortDirection(u8 Copy_u8PortId, u8 * Copy_pu8ReturnedPortDirection)
+{
+	u8 Local_u8ErrorState = STD_TYPES_OK;
+	if(Copy_pu8ReturnedPortDirection != NULL)
+	{
+		switch (Copy_u8PortId)
+		{
+			case DIO_u8_PORTA: *Copy_pu8ReturnedPortDirection = DIO_u8_DDRA_REG; break;
+			case DIO_u8_PORTB: *Copy_pu8ReturnedPortDirection = DIO_u8_DDRB_REG; break;
+			case DIO_u8_PORTC: *Copy_pu8ReturnedPortDirection = DIO_u8_DDRC_REG; break;
+			case DIO_u8_PORTD: *Copy_pu8ReturnedPortDirection = DIO_u8_DDRD_REG; break;
+			default : Local_u8ErrorState = STD_TYPES_NOK;
+		}
+	}
+	else
+	{
+		Local_u8ErrorState = STD_TYPES_NOK;
+	}
+	return Local_u8ErrorState;
+}
+
+/* Enable the internal pull-up of an input pin (AVR: PORT bit = 1 while DDR bit = 0) */
+u8  DIO_u8ActivePinPullUp (u8 Copy_u8PortId, u8 Copy_u8PinId)
+{
+	u8 Local_u8ErrorState = STD_TYPES_OK;
+	if((Copy_u8PortId <= DIO_u8_PORTD) && (Copy_u8PinId <= DIO_u8_PIN7))
+	{
+		Local_u8ErrorState  = DIO_u8SetPinDirection(Copy_u8PortId, Copy_u8PinId, DIO_u8_INPUT);
+		Local_u8ErrorState |= DIO_u8SetPinValue    (Copy_u8PortId, Copy_u8PinId, DIO_u8_HIGH);
 	}
 	else
 	{
